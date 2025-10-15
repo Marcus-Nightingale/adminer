@@ -241,9 +241,18 @@ if (isset($_GET["clickhouse"])) {
 		sort($return);
 		return $return;
 	}
-
+	
 	function limit($query, $where, $limit, $offset = 0, $separator = " ") {
-		return " $query$where" . ($limit ? $separator . "LIMIT $limit" . ($offset ? ", $offset" : "") : "");
+		// ClickHouse supports standard SQL "LIMIT <count> OFFSET <offset>" syntax.
+		// Use OFFSET explicitly so pagination offset is applied correctly.
+		if (!$limit) {
+			return " $query$where";
+		}
+		$limitClause = "LIMIT " . (int) $limit;
+		if ($offset) {
+			$limitClause .= " OFFSET " . (int) $offset;
+		}
+		return " $query$where" . $separator . $limitClause;
 	}
 
 	function limit1($table, $query, $where, $separator = "\n") {
